@@ -1,30 +1,26 @@
 import React, { useState } from "react";
 
 const MainContent = () => {
-  const [xmlInput, setXmlInput] = useState("");
   const [jsonInput, setJsonInput] = useState("");
   const [metadata, setMetadata] = useState("");
   const [output, setOutput] = useState("");
 
-  // Function to parse XML input
-  const parseXml = () => {
-    // Parse XML logic goes here
-    try {
-      // Example: Parsing XML using DOMParser
-      const parser = new DOMParser();
-      const xmlDoc = parser.parseFromString(xmlInput, "text/xml");
-      setOutput(xmlDoc.documentElement.outerHTML);
-    } catch (error) {
-      setOutput("Error parsing XML");
-    }
-  };
-
   // Function to parse JSON input
-  const parseJson = () => {
-    // Parse JSON logic goes here
+  const parseJson = async () => {
     try {
-      const jsonData = JSON.parse(jsonInput);
-      setOutput(JSON.stringify(jsonData, null, 2));
+      const response = await fetch(
+        "https://dmi-finance-generic-parser-for-xml-and-json-8q3hrvmal.vercel.app/",
+        {
+          mode: "no-cors",
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: jsonInput,
+        }
+      );
+      const data = await response.text();
+      setOutput(data);
     } catch (error) {
       setOutput("Error parsing JSON");
     }
@@ -32,46 +28,41 @@ const MainContent = () => {
 
   return (
     <>
-      <div className="flex flex-col border">
-        <div className="flex">
-          <label>XML Input:</label>
-          <textarea
-            value={xmlInput}
-            onChange={(e) => setXmlInput(e.target.value)}
-            rows={5}
-            cols={50}
-            className="border"
-          />
-        </div>
-        <div>
-          <label>JSON Input:</label>
+      <div className="flex flex-col border p-4 space-y-4 min-h-screen">
+        <div className="flex items-center font-bold">
+          <label className="mr-2">JSON Input:</label>
           <textarea
             value={jsonInput}
             onChange={(e) => setJsonInput(e.target.value)}
             rows={5}
             cols={50}
-            className="border"
+            className="border-2 border-black p-2 flex-1 m-2 rounded-lg"
           />
         </div>
-        <div>
-          <label>Metadata:</label>
+        <div className="flex items-center font-bold">
+          <label className="mr-2">Metadata:</label>
           <input
             type="text"
             value={metadata}
             onChange={(e) => setMetadata(e.target.value)}
-            className="border"
+            className="border-2 border-black p-2 flex-1 rounded-lg"
           />
         </div>
-        <button onClick={parseXml}>Parse XML</button>
-        <button onClick={parseJson}>Parse JSON</button>
-        <div>
-          <h3>Output:</h3>
+
+        <button
+          onClick={parseJson}
+          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+        >
+          Parse JSON
+        </button>
+        <div className="border border-black rounded-lg">
+          <h3 className="p-2 font-bold">Output:</h3>
           <textarea
             value={output}
             readOnly
-            rows={10}
-            cols={50}
-            className="border"
+            rows={5}
+            className="borde p-2 flex-1 rounded-lg"
+            style={{ width: "calc(100% - 16px)" }}
           />
         </div>
       </div>
