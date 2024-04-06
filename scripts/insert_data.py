@@ -3,7 +3,7 @@ from pymongo import MongoClient
 import json
 
 # Connect to MongoDB Atlas
-client = MongoClient('mongodb+srv://dbUserKavisha:dbUserPassword@cluster0.hnkbluq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0')
+client = MongoClient('mongodb+srv://kvsha2002:dbUserPassword@cluster0.rgozber.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0')
 db = client['mydatabase']
 
 def json_to_csv(file_path):

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metadata Viewer</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            color: #212529;
+            margin-top: 50px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .card {
+            border: none;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 20px;
+        }
+
+        .upload-btn {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+
+        .upload-btn:hover {
+            background-color: #0056b3;
+            border-color: #0056b3;
+        }
+
+        .upload-icon {
+            color: #fff;
+        }
+
+        #metadataTable {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        #metadataTable th,
+        #metadataTable td {
+            border: 1px solid #dee2e6;
+            padding: 8px;
+            text-align: left;
+        }
+
+        #metadataTable th {
+            background-color: #007bff;
+            color: #fff;
+        }
+
+        #metadataTable tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title text-center mb-4">Metadata Viewer</h2>
+                <form id="jsonForm">
+                    <div class="form-group">
+                        <input type="file" class="form-control-file" id="jsonFile" accept=".json" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block upload-btn"><i
+                            class="fas fa-upload upload-icon mr-2"></i> Upload</button>
+                </form>
+            </div>
+        </div>
+        <table id="metadataTable" class="mt-4">
+            <thead>
+                <tr>
+                    <th>Section</th>
+                    <th>Attributes</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Metadata rows will be dynamically added here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.3/js/all.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.getElementById('jsonForm').addEventListener('submit', function (event) {
+                event.preventDefault();
+                const formData = new FormData();
+                formData.append('file', document.getElementById('jsonFile').files[0]);
+
+                fetch('http://127.0.0.1:5000/process_json', {
+                    method: 'POST',
+                    body: formData,
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        const tableBody = document.querySelector('#metadataTable tbody');
+                        tableBody.innerHTML = '';
+                        for (const section in data.metadata) {
+                            const attributes = data.metadata[section].join(', ');
+                            const row = `<tr><td>${section}</td><td>${attributes}</td></tr>`;
+                            tableBody.insertAdjacentHTML('beforeend', row);
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+            });
+        });
+    </script>
+</body>
+
+</html>
