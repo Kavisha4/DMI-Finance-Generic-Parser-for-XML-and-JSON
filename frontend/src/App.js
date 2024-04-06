@@ -1,10 +1,10 @@
 import "./App.css";
-import Header from "./components/Header";
+import Home from "./components/Home";
 
 function App() {
   return (
-    <div className="text-3xl font-bold underline bg-red-500">
-      <Header />
+    <div className="">
+      <Home />
     </div>
   );
 }
