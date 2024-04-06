@@ -1,15 +1,9 @@
 import csv
-from pymongo import MongoClient
 import json
+from pymongo import MongoClient
 
-# Connect to MongoDB Atlas
-client = MongoClient('mongodb+srv://dbUserKavisha:dbUserPassword@cluster0.hnkbluq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0')
-db = client['mydatabase']
 
-def json_to_csv(file_path):
-    with open(file_path, 'r', encoding='utf-8') as json_file:
-        data = json.load(json_file)
-       
+def json_to_csv(data):
     file_name = "output.csv"
     with open(file_name, 'w', newline='', encoding='utf-8') as csv_file:
         writer = csv.writer(csv_file)
@@ -17,7 +11,6 @@ def json_to_csv(file_path):
         writer.writerow(["Table", "Attribute", "Value"])
         # Write rows
         parse_data(writer, data)
-    return file_name
 
 def parse_data(writer, data, parent_section=""):
     for key, value in data.items():
@@ -61,37 +54,14 @@ def generate_metadata_recursive(data, metadata, parent_section=""):
                     metadata[nested_section] = list(item.keys())
                     generate_metadata_recursive(item, metadata, nested_section)
 
-# File path to JSON data
-file_path = "JSON\Erro_Json.json"
-
-# Call the function to convert JSON to CSV
-csv_file_path = json_to_csv(file_path)
-
-# Generate metadata
-metadata = generate_metadata(json.load(open(file_path)))
-
-# Print metadata
-for section, attributes in metadata.items():
-    print(section + ":", attributes)
-
-# Insert CSV data into MongoDB
-collection_name = "csv_data"
-collection = db[collection_name]
-
-with open(csv_file_path, 'r', encoding='utf-8') as csv_file:
-    csv_reader = csv.DictReader(csv_file)
-    csv_data = []
-    for row in csv_reader:
-        csv_data.append(row)
-
-# Insert metadata into MongoDB
-metadata_collection_name = "metadata"
-metadata_collection = db[metadata_collection_name]
-metadata_collection.insert_one(metadata)
-
-# Insert CSV data into MongoDB
-csv_collection_name = "csv_data"
-csv_collection = db[csv_collection_name]
-csv_collection.insert_many(csv_data)
-
-print("CSV data and metadata stored in MongoDB successfully!")
+def process_json_file(file_path):
+    with open(file_path, 'r', encoding='utf-8') as json_file:
+        data = json.load(json_file)
+    
+    # Process JSON data to CSV
+    json_to_csv(data)
+    
+    # Generate metadata
+    metadata = generate_metadata(data)
+    
+    return metadata
