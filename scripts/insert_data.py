@@ -1,3 +1,4 @@
+import csv
 from pymongo import MongoClient
 import json
 
@@ -5,95 +6,92 @@ import json
 client = MongoClient('mongodb+srv://dbUserKavisha:dbUserPassword@cluster0.hnkbluq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0')
 db = client['mydatabase']
 
-# Define the schemas
-error_schema = {
-    "ErrorID": {"type": "int", "auto_increment": True, "primary_key": True},
-    "Status": {"type": "string"},
-    "AckID": {"type": "int"},
-    "RejectID": {"type": "int", "foreign_key": "Reject.RejectID"},
-    "HeaderID": {"type": "int", "foreign_key": "Header.HeaderID"}
-}
+def json_to_csv(file_path):
+    with open(file_path, 'r', encoding='utf-8') as json_file:
+        data = json.load(json_file)
+       
+    file_name = "output.csv"
+    with open(file_name, 'w', newline='', encoding='utf-8') as csv_file:
+        writer = csv.writer(csv_file)
+        # Write header
+        writer.writerow(["Table", "Attribute", "Value"])
+        # Write rows
+        parse_data(writer, data)
+    return file_name
 
-reject_schema = {
-    "RejectID": {"type": "int", "auto_increment": True, "primary_key": True},
-    "TrackingID": {"type": "int"},
-    "Status": {"type": "string"},
-    "ErrorType": {"type": "int", "foreign_key": "ErrorType.ErrorTypeID"},
-    "Product": {"type": "string"},
-    "Bureau": {"type": "string"}
-}
+def parse_data(writer, data, parent_section=""):
+    for key, value in data.items():
+        if isinstance(value, dict):
+            if parent_section:
+                section = f"{parent_section} - {key}"
+            else:
+                section = key
+            parse_data(writer, value, section)
+        elif isinstance(value, list):
+            for index, item in enumerate(value, start=1):
+                if isinstance(item, dict):
+                    parse_data(writer, item, key)
+                else:
+                    writer.writerow([key, f"Item {index}", item])
+        else:
+            if parent_section:
+                writer.writerow([parent_section, key, value])
+            else:
+                writer.writerow([key, "", value])
 
-error_type_schema = {
-    "ErrorTypeID": {"type": "int", "auto_increment": True, "primary_key": True},
-    "Code": {"type": "string"},
-    "Description": {"type": "string"}
-}
+def generate_metadata(data):
+    metadata = {}
+    metadata["Top-Level"] = list(data.keys())
+    generate_metadata_recursive(data, metadata)
+    return metadata
 
-# Insert the data into MongoDB
-def insert_data(collection_name, data):
-    collection = db[collection_name]
-    inserted_document = collection.insert_one(data)
-    print(f"Inserted Document ID: {inserted_document.inserted_id}")
+def generate_metadata_recursive(data, metadata, parent_section=""):
+    for key, value in data.items():
+        if isinstance(value, dict):
+            if parent_section:
+                section = f"{parent_section} - {key}"
+            else:
+                section = key
+            metadata[section] = list(value.keys())
+            generate_metadata_recursive(value, metadata, section)
+        elif isinstance(value, list):
+            for index, item in enumerate(value, start=1):
+                if isinstance(item, dict):
+                    nested_section = f"{key}"
+                    metadata[nested_section] = list(item.keys())
+                    generate_metadata_recursive(item, metadata, nested_section)
 
-# Define the JSON document
-json_data = '''
-{
-  "STATUS": "COMPLETED",
-  "ACKNOWLEDGEMENT-ID": 12345,
-  "REJECT": [
-    {
-      "TRACKING-ID": 12345,
-      "STATUS": "ERROR",
-      "ERRORS": [
-        {
-          "CODE": "NA",
-          "DESCRIPTION": "ERRR05042024140735UR03U01012500QOS0000080YI52AE 1020PAA010111D N0 1 10621011PAA010602281015PAA010706515775ES0700001290102"
-        }
-      ],
-      "PRODUCT": "CIR",
-      "BUREAU": "CIBIL"
-    }
-  ],
-  "HEADER": {
-    "CUST-ID": "003OS000007wZO8YAM",
-    "APPLICATION-ID": "00QOS0000080Yi52AE",
-    "RESPONSE-TYPE": "RESPONSE",
-    "REQUEST-RECEIVED-TIME": "2024-04-05 08:37:35"
-  }
-}
-'''
+# File path to JSON data
+file_path = "JSON\Bureau_Erro_Json.json"
 
-document = json.loads(json_data)
+# Call the function to convert JSON to CSV
+csv_file_path = json_to_csv(file_path)
 
-# Insert data into separate tables
-error_data = {
-    "Status": document["STATUS"],
-    "AckID": document["ACKNOWLEDGEMENT-ID"]
-}
-insert_data("Error", error_data)
+# Generate metadata
+metadata = generate_metadata(json.load(open(file_path)))
 
-header_data = {
-    "CustID": document["HEADER"]["CUST-ID"],
-    "ApplicationID": document["HEADER"]["APPLICATION-ID"],
-    "ResponseType": document["HEADER"]["RESPONSE-TYPE"],
-    "RequestReceivedTime": document["HEADER"]["REQUEST-RECEIVED-TIME"]
-}
-insert_data("Header", header_data)
+# Print metadata
+for section, attributes in metadata.items():
+    print(section + ":", attributes)
 
-reject = document["REJECT"][0]
-reject_data = {
-    "TrackingID": reject["TRACKING-ID"],
-    "Status": reject["STATUS"],
-    "Product": reject["PRODUCT"],
-    "Bureau": reject["BUREAU"]
-}
-insert_data("Reject", reject_data)
+# Insert CSV data into MongoDB
+collection_name = "csv_data"
+collection = db[collection_name]
 
-error_type_data = {
-    "Code": reject["ERRORS"][0]["CODE"],
-    "Description": reject["ERRORS"][0]["DESCRIPTION"]
-}
-insert_data("ErrorType", error_type_data)
+with open(csv_file_path, 'r', encoding='utf-8') as csv_file:
+    csv_reader = csv.DictReader(csv_file)
+    csv_data = []
+    for row in csv_reader:
+        csv_data.append(row)
 
-# Close the connection
-client.close()
+# Insert metadata into MongoDB
+metadata_collection_name = "metadata"
+metadata_collection = db[metadata_collection_name]
+metadata_collection.insert_one(metadata)
+
+# Insert CSV data into MongoDB
+csv_collection_name = "csv_data"
+csv_collection = db[csv_collection_name]
+csv_collection.insert_many(csv_data)
+
+print("CSV data and metadata stored in MongoDB successfully!")
