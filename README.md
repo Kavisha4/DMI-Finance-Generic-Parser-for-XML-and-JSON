@@ -45,3 +45,4 @@ This project aims to create a versatile parser that can handle diverse XML and J
 
 Github links:
 1. Kavisha Mathur: [GitHub Profile](https://github.com/Kavisha4)
+2. Aarti Sharma: [Github Profile](https://github.com/aartisharma05)
